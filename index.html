@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TENSOR // HUD</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+</head>
+<body>
+
+    <div class="bg-grid"></div>
+    <div class="bg-glow"></div>
+
+    <div class="deck-container">
+
+        <aside class="panel left-panel">
+            <div class="panel-header">
+                <div class="icon-box">TF</div>
+                <div class="header-text">
+                    <h1>NEURAL<span class="accent">LINK</span></h1>
+                    <span class="sub">SEQ.800 // READY</span>
+                </div>
+            </div>
+
+            <div class="section status-section">
+                <div class="section-title">SYSTEM_STATUS</div>
+                <div class="status-row">
+                    <div class="indicator" id="statusIndicator"></div>
+                    <span id="statusText" class="mono">INITIALIZING...</span>
+                </div>
+                <div id="latencyMetric" class="mono dim">LATENCY: -- ms</div>
+            </div>
+
+            <div class="section control-section">
+                <div class="section-title">OPERATIONS</div>
+                <button id="clearBtn" class="tech-btn">
+                    <span class="btn-icon">⟲</span> FLUSH BUFFER
+                </button>
+                <button id="predictBtn" class="tech-btn primary" disabled>
+                    <span class="btn-icon">⚡</span> INFER DATA
+                </button>
+            </div>
+
+            <div class="section sensor-section">
+                <div class="section-title">SENSOR_FEED [28px]</div>
+                <div class="sensor-frame">
+                    <canvas id="sensorCanvas" width="28" height="28"></canvas>
+                    <div class="sensor-overlay"></div>
+                </div>
+            </div>
+        </aside>
+
+        <main class="panel center-panel">
+            <div class="viewport-header">
+                <span class="mono">INPUT_MATRIX</span>
+                <span class="mono accent">560x560</span>
+            </div>
+
+            <div class="canvas-housing" id="canvasHousing">
+                <canvas id="drawCanvas" width="560" height="560"></canvas>
+                <div class="scan-line"></div>
+
+                <div class="reticle tl"></div><div class="reticle tr"></div>
+                <div class="reticle bl"></div><div class="reticle br"></div>
+                <div class="center-cross"></div>
+            </div>
+        </main>
+
+        <aside class="panel right-panel">
+            <div class="section result-section">
+                <div class="section-title">CLASSIFICATION</div>
+                <div class="digit-display">
+                    <span id="predictionResult" class="glitch-target">--</span>
+                </div>
+            </div>
+
+            <div class="section contenders-section">
+                <div class="section-title">PROBABILITY_DIST</div>
+                <div class="contenders-list" id="contendersList">
+                    </div>
+            </div>
+
+            <div class="section confidence-section">
+                <div class="section-title">TOP_CERTAINTY</div>
+                <div class="meter-wrapper">
+                    <div class="meter-bg">
+                        <div id="confidenceBar" class="meter-fill"></div>
+                    </div>
+                    <span id="confidenceValue" class="mono">0.0%</span>
+                </div>
+            </div>
+        </aside>
+
+    </div>
+
+    <canvas id="hiddenCanvas" width="560" height="560" style="display:none;"></canvas>
+
+    <script src="script.js"></script>
+</body>
+</html>
