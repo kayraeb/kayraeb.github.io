@@ -35,6 +35,7 @@ body {
     padding: 15px;
     gap: 15px;
     align-items: start; /* Windows don't stretch */
+    height: calc(100% - 30px); /* Subtract taskbar height */
 }
 
 /* --- XP Window Styling --- */
@@ -48,11 +49,20 @@ body {
     flex-direction: column;
 }
 
-.center-panel { height: 100%; max-height: 90vh; }
+.center-panel { 
+    height: 100%; 
+}
+
+.left-panel, .right-panel {
+    height: auto;
+    max-height: 100%;
+    overflow-y: auto;
+}
 
 /* Title Bar */
 .window-title-bar {
     height: 30px;
+    min-height: 30px;
     background: linear-gradient(to bottom, #245DDA 0%, #3593FF 4%, #245DDA 100%);
     padding: 0 8px;
     display: flex;
@@ -86,7 +96,6 @@ body {
 }
 .win-btn:hover { filter: brightness(1.2); }
 
-/* Mimic Minimize/Maximize/Close icons using CSS shapes */
 .minimize::after { content:''; position:absolute; bottom:5px; left:4px; width:10px; height:2px; background:white; }
 .maximize::after { content:''; position:absolute; top:5px; left:4px; width:10px; height:10px; border:2px solid white; border-top-width:3px;}
 .close { background: #E0422E; border: 1px solid white; }
@@ -151,9 +160,9 @@ body {
 .sensor-housing {
     background: black;
     border: 1px solid #888;
-    /* Make the 28px canvas look huge */
-    width: 140px; 
-    height: 140px;
+    /* Ensure sensor is big and visible */
+    width: 160px; 
+    height: 160px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -171,9 +180,11 @@ body {
     flex: 1;
     display: flex;
     flex-direction: column;
+    overflow: hidden;
 }
 .paint-toolbar {
     height: 26px;
+    min-height: 26px;
     background: var(--xp-bg);
     border-bottom: 1px solid #808080;
     display: flex; align-items: center; padding: 0 5px; gap: 2px;
@@ -187,31 +198,23 @@ body {
 .tool:hover { border: 1px outset white; }
 .tool.active { border: 1px inset white; background: #fff; }
 
-.canvas-scroll-area {
+/* The Area that fills the window */
+.canvas-fill-area {
     flex: 1;
-    overflow: auto;
-    display: flex;
-    padding: 10px;
-}
-.canvas-border {
-    background: white;
+    background: #fff; /* White paper background */
     position: relative;
-    box-shadow: 2px 2px 5px rgba(0,0,0,0.5);
-    width: fit-content;
-    height: fit-content;
-}
-#drawCanvas {
-    display: block;
+    overflow: hidden; /* Hide scrollbars, canvas fits */
     cursor: crosshair;
 }
-/* Paint Resize Handles */
-.resize-handle { position: absolute; background: #000080; width: 3px; height: 3px; }
-.resize-handle.right { top: 50%; right: -2px; cursor: e-resize; }
-.resize-handle.bottom { bottom: -2px; left: 50%; cursor: n-resize; }
-.resize-handle.corner { bottom: -2px; right: -2px; cursor: nw-resize; }
+
+#drawCanvas {
+    display: block;
+    /* Canvas size set by JS to match container */
+}
 
 .status-bar {
     height: 20px;
+    min-height: 20px;
     background: var(--xp-bg);
     border-top: 1px solid #d4d0c8;
     display: flex;
@@ -266,7 +269,6 @@ body {
 .xp-progress-fill {
     height: 100%;
     width: 0%;
-    /* The classic XP green chunk pattern */
     background-image: linear-gradient(
         90deg, 
         transparent 0%, transparent 80%, 
@@ -286,6 +288,7 @@ body {
     align-items: center;
     padding: 0 2px;
     z-index: 9999;
+    position: fixed; bottom: 0; width: 100%;
 }
 .start-button {
     height: 24px;
