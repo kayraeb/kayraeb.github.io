@@ -1,17 +1,12 @@
 // ---------------------------------------------------------
 // 1. CONFIGURATION
 // ---------------------------------------------------------
-// Note: VISUAL_SIZE and HIDDEN_SIZE are now dynamic based on window size
-// but we keep a reference to the hidden buffer for the AI.
+const VISUAL_COLOR = '#000000'; 
+const VISUAL_STROKE_WIDTH = 25; 
 
-// --- VISUAL AESTHETICS (MS Paint Style) ---
-const VISUAL_COLOR = '#000000'; // Black Ink
-const VISUAL_STROKE_WIDTH = 25; // Pencil thickness (Scales with canvas?) No, kept constant like Paint.
-
-// --- DATA PHYSICS (The Brain) ---
 const HIDDEN_STROKE_WIDTH = 45;
-const BG_COLOR = '#ffffff';     // Visual canvas background (White paper)
-const DATA_BG_COLOR = 'black';  // Hidden tensor background
+const BG_COLOR = '#ffffff';     
+const DATA_BG_COLOR = 'black';  
 
 // ---------------------------------------------------------
 // 2. DOM ELEMENTS
@@ -20,7 +15,6 @@ const canvasContainer = document.getElementById('canvasContainer');
 const canvas = document.getElementById('drawCanvas');
 const ctx = canvas.getContext('2d', { willReadFrequently: true });
 
-// The hidden canvas mimics the visual canvas size to ensure coordinate mapping is 1:1
 const hiddenCanvas = document.getElementById('hiddenCanvas');
 const hiddenCtx = hiddenCanvas.getContext('2d', { willReadFrequently: true });
 
@@ -52,17 +46,13 @@ async function initApp() {
         return;
     }
 
-    // Initial sizing
     resizeCanvas();
-    
-    // Listen for resize
     window.addEventListener('resize', debounce(resizeCanvas, 100));
 
     try {
         await tf.setBackend('cpu');
         model = await tf.loadLayersModel('./web_model/model.json');
 
-        // Warmup
         const dummy = tf.zeros([1, 784]);
         model.predict(dummy).dispose();
         dummy.dispose();
@@ -86,12 +76,9 @@ function updateStatus(msg, type) {
 // 4. DRAWING ENGINE
 // ---------------------------------------------------------
 function resizeCanvas() {
-    // Get the container dimensions
     const w = canvasContainer.clientWidth;
     const h = canvasContainer.clientHeight;
 
-    // Only resize if dimensions changed to avoid clearing content unnecessarily
-    // (Though in MS Paint resizing usually clears or crops, we will simply clear for simplicity here)
     if (canvas.width !== w || canvas.height !== h) {
         canvas.width = w;
         canvas.height = h;
@@ -101,20 +88,17 @@ function resizeCanvas() {
 
         if(resolutionDisplay) resolutionDisplay.innerText = `${w} x ${h}px`;
         
-        // Re-apply context styles after resize resets them
         setupContext();
         clearBoard();
     }
 }
 
 function setupContext() {
-    // 1. Visual Context Style
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
     ctx.strokeStyle = VISUAL_COLOR;
     ctx.lineWidth = VISUAL_STROKE_WIDTH;
 
-    // 2. Hidden Context Style
     hiddenCtx.lineCap = 'round';
     hiddenCtx.lineJoin = 'round';
     hiddenCtx.strokeStyle = '#ffffff';
@@ -142,8 +126,6 @@ function getCoords(e) {
     const cx = e.touches ? e.touches[0].clientX : e.clientX;
     const cy = e.touches ? e.touches[0].clientY : e.clientY;
 
-    // Since canvas fills the container 1:1, no scaling calc is needed usually,
-    // but we keep it for robustness.
     return {
         x: cx - rect.left,
         y: cy - rect.top
@@ -156,7 +138,6 @@ function start(e) {
     lastX = x;
     lastY = y;
 
-    // Initial Dot
     ctx.beginPath();
     ctx.arc(x, y, VISUAL_STROKE_WIDTH/2, 0, Math.PI*2);
     ctx.fillStyle = VISUAL_COLOR;
@@ -170,7 +151,7 @@ function start(e) {
 
 function move(e) {
     if (!isDrawing) return;
-    e.preventDefault();
+    if (e.cancelable) e.preventDefault(); // Add check for passive events
     const {x, y} = getCoords(e);
 
     ctx.beginPath();
@@ -211,7 +192,7 @@ window.addEventListener('touchend', end);
 clearBtn.addEventListener('click', clearBoard);
 
 // ---------------------------------------------------------
-// 5. PREPROCESSING (Center of Mass)
+// 5. PREPROCESSING
 // ---------------------------------------------------------
 function getBoundingBox(data, w, h) {
     let minX=w, minY=h, maxX=0, maxY=0, found=false;
@@ -252,14 +233,12 @@ function extractInputTensor(shiftX = 0, shiftY = 0) {
     const bbox = getBoundingBox(rawData.data, w, h);
     if(!bbox) return null;
 
-    // 28x28 is the MNIST standard
     const temp = document.createElement('canvas');
     temp.width = 28; temp.height = 28;
     const tCtx = temp.getContext('2d');
     tCtx.fillStyle = 'black';
     tCtx.fillRect(0, 0, 28, 28);
 
-    // Scale to 20x20 to fit in 28x28 box
     const scale = 20 / Math.max(bbox.w, bbox.h);
     const sw = bbox.w * scale;
     const sh = bbox.h * scale;
@@ -305,7 +284,7 @@ function extractInputTensor(shiftX = 0, shiftY = 0) {
 }
 
 // ---------------------------------------------------------
-// 6. INFERENCE (TTA)
+// 6. INFERENCE
 // ---------------------------------------------------------
 predictBtn.addEventListener('click', async () => {
     if(!model) return;
@@ -344,7 +323,6 @@ predictBtn.addEventListener('click', async () => {
     
     if(latencyMetric) latencyMetric.innerText = `Latency: ${Math.round(t1-t0)} ms`;
 
-    // XP colors for progress
     if(max > 0.9) confidenceBar.style.backgroundColor = '#00FF00';
     else if(max > 0.6) confidenceBar.style.backgroundColor = '#FFFF00';
     else confidenceBar.style.backgroundColor = '#FF0000';
