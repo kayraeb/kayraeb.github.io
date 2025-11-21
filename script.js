@@ -1,18 +1,14 @@
 // ---------------------------------------------------------
 // 1. CONFIGURATION
 // ---------------------------------------------------------
-const VISUAL_SIZE = 560;
-const HIDDEN_SIZE = 560; // 1:1 for accuracy
+// Note: VISUAL_SIZE and HIDDEN_SIZE are now dynamic based on window size
+// but we keep a reference to the hidden buffer for the AI.
 
 // --- VISUAL AESTHETICS (MS Paint Style) ---
 const VISUAL_COLOR = '#000000'; // Black Ink
-const VISUAL_GLOW_COLOR = 'rgba(0,0,0,0)';
-const VISUAL_GLOW_SIZE = 0;
-const VISUAL_STROKE_WIDTH = 25; // Pencil thickness
+const VISUAL_STROKE_WIDTH = 25; // Pencil thickness (Scales with canvas?) No, kept constant like Paint.
 
 // --- DATA PHYSICS (The Brain) ---
-// Thick stroke (45px) is mandatory for the AI to see the digit.
-// Model expects White ink on Black background.
 const HIDDEN_STROKE_WIDTH = 45;
 const BG_COLOR = '#ffffff';     // Visual canvas background (White paper)
 const DATA_BG_COLOR = 'black';  // Hidden tensor background
@@ -20,10 +16,14 @@ const DATA_BG_COLOR = 'black';  // Hidden tensor background
 // ---------------------------------------------------------
 // 2. DOM ELEMENTS
 // ---------------------------------------------------------
+const canvasContainer = document.getElementById('canvasContainer');
 const canvas = document.getElementById('drawCanvas');
 const ctx = canvas.getContext('2d', { willReadFrequently: true });
+
+// The hidden canvas mimics the visual canvas size to ensure coordinate mapping is 1:1
 const hiddenCanvas = document.getElementById('hiddenCanvas');
 const hiddenCtx = hiddenCanvas.getContext('2d', { willReadFrequently: true });
+
 const sensorCanvas = document.getElementById('sensorCanvas');
 const sensorCtx = sensorCanvas.getContext('2d');
 
@@ -36,6 +36,7 @@ const statusText = document.getElementById('statusText');
 const statusIndicator = document.getElementById('statusIndicator');
 const contendersList = document.getElementById('contendersList');
 const latencyMetric = document.getElementById('latencyMetric');
+const resolutionDisplay = document.getElementById('resolutionDisplay');
 
 let isDrawing = false;
 let lastX = 0;
@@ -51,7 +52,11 @@ async function initApp() {
         return;
     }
 
-    initCanvas();
+    // Initial sizing
+    resizeCanvas();
+    
+    // Listen for resize
+    window.addEventListener('resize', debounce(resizeCanvas, 100));
 
     try {
         await tf.setBackend('cpu');
@@ -80,36 +85,48 @@ function updateStatus(msg, type) {
 // ---------------------------------------------------------
 // 4. DRAWING ENGINE
 // ---------------------------------------------------------
-function initCanvas() {
-    [canvas, hiddenCanvas].forEach(c => {
-        c.width = VISUAL_SIZE;
-        c.height = VISUAL_SIZE;
-    });
+function resizeCanvas() {
+    // Get the container dimensions
+    const w = canvasContainer.clientWidth;
+    const h = canvasContainer.clientHeight;
 
+    // Only resize if dimensions changed to avoid clearing content unnecessarily
+    // (Though in MS Paint resizing usually clears or crops, we will simply clear for simplicity here)
+    if (canvas.width !== w || canvas.height !== h) {
+        canvas.width = w;
+        canvas.height = h;
+        
+        hiddenCanvas.width = w;
+        hiddenCanvas.height = h;
+
+        if(resolutionDisplay) resolutionDisplay.innerText = `${w} x ${h}px`;
+        
+        // Re-apply context styles after resize resets them
+        setupContext();
+        clearBoard();
+    }
+}
+
+function setupContext() {
     // 1. Visual Context Style
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
     ctx.strokeStyle = VISUAL_COLOR;
     ctx.lineWidth = VISUAL_STROKE_WIDTH;
-    ctx.shadowBlur = VISUAL_GLOW_SIZE;
-    ctx.shadowColor = VISUAL_GLOW_COLOR;
 
     // 2. Hidden Context Style
     hiddenCtx.lineCap = 'round';
     hiddenCtx.lineJoin = 'round';
     hiddenCtx.strokeStyle = '#ffffff';
     hiddenCtx.lineWidth = HIDDEN_STROKE_WIDTH;
-    hiddenCtx.shadowBlur = 0;
-
-    clearBoard();
 }
 
 function clearBoard() {
     ctx.fillStyle = BG_COLOR;
-    ctx.fillRect(0, 0, VISUAL_SIZE, VISUAL_SIZE);
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     hiddenCtx.fillStyle = DATA_BG_COLOR;
-    hiddenCtx.fillRect(0, 0, HIDDEN_SIZE, HIDDEN_SIZE);
+    hiddenCtx.fillRect(0, 0, hiddenCanvas.width, hiddenCanvas.height);
 
     sensorCtx.fillStyle = 'black';
     sensorCtx.fillRect(0, 0, 28, 28);
@@ -125,12 +142,11 @@ function getCoords(e) {
     const cx = e.touches ? e.touches[0].clientX : e.clientX;
     const cy = e.touches ? e.touches[0].clientY : e.clientY;
 
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-
+    // Since canvas fills the container 1:1, no scaling calc is needed usually,
+    // but we keep it for robustness.
     return {
-        x: (cx - rect.left) * scaleX,
-        y: (cy - rect.top) * scaleY
+        x: cx - rect.left,
+        y: cy - rect.top
     };
 }
 
@@ -177,6 +193,15 @@ function end() {
     hiddenCtx.beginPath();
 }
 
+function debounce(func, wait) {
+    let timeout;
+    return function() {
+        const context = this, args = arguments;
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(context, args), wait);
+    };
+}
+
 canvas.addEventListener('mousedown', start);
 canvas.addEventListener('touchstart', start, {passive: false});
 canvas.addEventListener('mousemove', move);
@@ -221,16 +246,20 @@ function getCenterOfMass(data, w, h) {
 }
 
 function extractInputTensor(shiftX = 0, shiftY = 0) {
-    const rawData = hiddenCtx.getImageData(0, 0, HIDDEN_SIZE, HIDDEN_SIZE);
-    const bbox = getBoundingBox(rawData.data, HIDDEN_SIZE, HIDDEN_SIZE);
+    const w = hiddenCanvas.width;
+    const h = hiddenCanvas.height;
+    const rawData = hiddenCtx.getImageData(0, 0, w, h);
+    const bbox = getBoundingBox(rawData.data, w, h);
     if(!bbox) return null;
 
+    // 28x28 is the MNIST standard
     const temp = document.createElement('canvas');
     temp.width = 28; temp.height = 28;
     const tCtx = temp.getContext('2d');
     tCtx.fillStyle = 'black';
     tCtx.fillRect(0, 0, 28, 28);
 
+    // Scale to 20x20 to fit in 28x28 box
     const scale = 20 / Math.max(bbox.w, bbox.h);
     const sw = bbox.w * scale;
     const sh = bbox.h * scale;
