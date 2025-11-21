@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Updated viewport for better mobile app behavior (prevents zooming while drawing) -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Number Recognition Demo </title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
@@ -35,11 +36,12 @@
                     <fieldset class="xp-fieldset">
                         <legend>Operations</legend>
                         <button id="clearBtn" class="xp-btn">
-                            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/8f/Gnome-edit-clear.svg/16px-Gnome-edit-clear.svg.png" alt="" class="btn-icon">
+                            <!-- Simple icon placeholders -->
+                            <span class="icon">↺</span>
                             Clear Canvas
                         </button>
                         <button id="predictBtn" class="xp-btn default" disabled>
-                            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Gnome-system-run.svg/16px-Gnome-system-run.svg.png" alt="" class="btn-icon">
+                            <span class="icon">⚡</span>
                             Start Prediction
                         </button>
                     </fieldset>
@@ -47,7 +49,6 @@
                     <fieldset class="xp-fieldset sensor-group">
                         <legend>Neural Sensor (28px)</legend>
                         <div class="sensor-housing">
-                            <!-- Canvas remains 28x28 logically, CSS scales it up visually -->
                             <canvas id="sensorCanvas" width="28" height="28"></canvas>
                         </div>
                     </fieldset>
@@ -136,9 +137,8 @@
         </div>
     </div>
 
-    <!-- Hidden canvas used for processing, size is managed by JS -->
+    <!-- Hidden canvas used for processing -->
     <canvas id="hiddenCanvas" style="display:none;"></canvas>
     <script src="script.js"></script>
 </body>
 </html>
-
