@@ -151,7 +151,7 @@ function start(e) {
 
 function move(e) {
     if (!isDrawing) return;
-    if (e.cancelable) e.preventDefault(); // Add check for passive events
+    if (e.cancelable) e.preventDefault(); 
     const {x, y} = getCoords(e);
 
     ctx.beginPath();
